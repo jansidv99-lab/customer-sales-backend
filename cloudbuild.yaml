@@ -1,6 +1,6 @@
-# cloudbuild.yaml
+# cloudbuild.yaml — customer-sales-backend
 steps:
-  # Step 1: Build the Docker image
+  # Step 1: Build image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -10,25 +10,36 @@ steps:
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend:latest'
       - '.'
 
-  # Step 2: Push both tags to Artifact Registry
+  # Step 2: Push by commit SHA
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend:$COMMIT_SHA'
 
+  # Step 3: Push latest tag
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend:latest'
 
-# Store built images in Artifact Registry
+  # Step 4: Install Helm
+  - name: 'alpine/helm:3.14.0'
+    entrypoint: helm
+    args:
+      - 'upgrade'
+      - '--install'                          # install if not exists, upgrade if exists
+      - 'backend'                            # Helm release name
+      - 'k8s/helm/backend'                  # path to chart in repo
+      - '--namespace=customer-sales'
+      - '--create-namespace'
+      - '--set=image.tag=$COMMIT_SHA'        # always deploy the exact commit we just built
+      - '--set=image.repository=us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend'
+      - '--wait'                             # wait for pods to be ready before marking build success
+      - '--timeout=3m'
+
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend:$COMMIT_SHA'
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend:latest'
 
-# Build options
 options:
   logging: CLOUD_LOGGING_ONLY
-
-substitutions:
-  _REGION: 'us-central1'

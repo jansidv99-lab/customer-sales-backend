@@ -1,0 +1,12 @@
+# templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "backend.fullname" . }}-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "backend.labels" . | nindent 4 }}
+data:
+  GCP_PROJECT_ID: {{ .Values.config.gcpProjectId | quote }}
+  BQ_DATASET:     {{ .Values.config.bqDataset | quote }}
+  BQ_TABLE:       {{ .Values.config.bqTable | quote }}

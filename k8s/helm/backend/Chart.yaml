@@ -1,0 +1,13 @@
+# k8s/helm/backend/Chart.yaml
+apiVersion: v2
+name: customer-sales-backend
+description: FastAPI backend serving customer sales data from BigQuery
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - fastapi
+  - bigquery
+  - customer-sales
+maintainers:
+  - name: jansidv99-lab
