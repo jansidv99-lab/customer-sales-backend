@@ -10,7 +10,7 @@ image:
   pullPolicy: Always
 
 # ── Replica count (free tier — keep at 1) ─────────────────
-replicaCount: 3
+replicaCount: 1
 
 # ── Service account ───────────────────────────────────────
 serviceAccount:
