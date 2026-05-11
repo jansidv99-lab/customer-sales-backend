@@ -1,6 +1,6 @@
 # cloudbuild.yaml — customer-sales-backend
 steps:
-  # Step 1: Build image
+  # Step 1: Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -10,7 +10,7 @@ steps:
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend:latest'
       - '.'
 
-  # Step 2: Push by commit SHA
+  # Step 2: Push commit SHA tag
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
@@ -22,20 +22,36 @@ steps:
       - 'push'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend:latest'
 
-  # Step 4: Install Helm
+  # Step 4: Authenticate to GKE cluster — CRITICAL missing step
+  # This writes kubeconfig so Helm can talk to the cluster in Step 5
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'container'
+      - 'clusters'
+      - 'get-credentials'
+      - 'customer-sales-cluster'
+      - '--region=us-central1'
+      - '--project=$PROJECT_ID'
+
+  # Step 5: Helm upgrade — now runs with valid kubeconfig
   - name: 'alpine/helm:3.14.0'
     entrypoint: helm
     args:
       - 'upgrade'
-      - '--install'                          # install if not exists, upgrade if exists
-      - 'backend'                            # Helm release name
-      - 'k8s/helm/backend'                  # path to chart in repo
+      - '--install'
+      - 'backend'
+      - 'k8s/helm/backend'
       - '--namespace=customer-sales'
       - '--create-namespace'
-      - '--set=image.tag=$COMMIT_SHA'        # always deploy the exact commit we just built
+      - '--set=image.tag=$COMMIT_SHA'
       - '--set=image.repository=us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend'
-      - '--wait'                             # wait for pods to be ready before marking build success
+      - '--wait'
       - '--timeout=3m'
+    # Mount the kubeconfig written by Step 4 into the Helm container
+    volumes:
+      - name: kubeconfig
+        path: /root/.kube
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend:$COMMIT_SHA'
