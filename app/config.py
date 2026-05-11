@@ -6,3 +6,4 @@ DATASET    = os.getenv("BQ_DATASET",     "customer_sales_db")
 TABLE      = os.getenv("BQ_TABLE",       "customers")
 
 FULL_TABLE = f"`{PROJECT_ID}.{DATASET}.{TABLE}`"
+#test
