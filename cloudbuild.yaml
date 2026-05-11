@@ -22,37 +22,29 @@ steps:
       - 'push'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend:latest'
 
-  # Step 4: Authenticate to GKE — volume declared HERE too
+  # Step 4 + 5 combined: auth to GKE + Helm deploy — all inside cloud-sdk
+  # cloud-sdk already has gke-gcloud-auth-plugin built in
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
+    entrypoint: bash
     args:
-      - 'container'
-      - 'clusters'
-      - 'get-credentials'
-      - 'customer-sales-cluster'
-      - '--region=us-central1'
-      - '--project=$PROJECT_ID'
-    volumes:
-      - name: kubeconfig
-        path: /root/.kube
+      - '-c'
+      - |
+        # Install Helm
+        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-  # Step 5: Helm upgrade — volume mounted HERE too (now used in 2 steps)
-  - name: 'alpine/helm:3.14.0'
-    entrypoint: helm
-    args:
-      - 'upgrade'
-      - '--install'
-      - 'backend'
-      - 'k8s/helm/backend'
-      - '--namespace=customer-sales'
-      - '--create-namespace'
-      - '--set=image.tag=$COMMIT_SHA'
-      - '--set=image.repository=us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend'
-      - '--wait'
-      - '--timeout=3m'
-    volumes:
-      - name: kubeconfig
-        path: /root/.kube
+        # Authenticate to GKE cluster
+        gcloud container clusters get-credentials customer-sales-cluster \
+          --region=us-central1 \
+          --project=$PROJECT_ID
+
+        # Run Helm upgrade
+        helm upgrade --install backend k8s/helm/backend \
+          --namespace=customer-sales \
+          --create-namespace \
+          --set=image.tag=$COMMIT_SHA \
+          --set=image.repository=us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend \
+          --wait \
+          --timeout=3m
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend:$COMMIT_SHA'
