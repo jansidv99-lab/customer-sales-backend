@@ -1,0 +1,26 @@
+# .gcloudignore
+.gcloudignore
+.git
+.gitignore
+
+# Python virtual environment — this is the main culprit
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local dev files
+.env
+*.json        # service account key files
+.DS_Store
