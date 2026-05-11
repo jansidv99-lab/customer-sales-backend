@@ -22,8 +22,7 @@ steps:
       - 'push'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend:latest'
 
-  # Step 4: Authenticate to GKE cluster — CRITICAL missing step
-  # This writes kubeconfig so Helm can talk to the cluster in Step 5
+  # Step 4: Authenticate to GKE — volume declared HERE too
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -33,8 +32,11 @@ steps:
       - 'customer-sales-cluster'
       - '--region=us-central1'
       - '--project=$PROJECT_ID'
+    volumes:
+      - name: kubeconfig
+        path: /root/.kube
 
-  # Step 5: Helm upgrade — now runs with valid kubeconfig
+  # Step 5: Helm upgrade — volume mounted HERE too (now used in 2 steps)
   - name: 'alpine/helm:3.14.0'
     entrypoint: helm
     args:
@@ -48,7 +50,6 @@ steps:
       - '--set=image.repository=us-central1-docker.pkg.dev/$PROJECT_ID/customer-sales-repo/backend'
       - '--wait'
       - '--timeout=3m'
-    # Mount the kubeconfig written by Step 4 into the Helm container
     volumes:
       - name: kubeconfig
         path: /root/.kube
